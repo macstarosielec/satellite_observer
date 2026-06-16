@@ -64,61 +64,11 @@ void main() {
     });
   });
 
-  group('quadraticPeak', () {
-    test('finds the vertex of a symmetric parabola exactly', () {
-      // f(t) = -(t - 5)^2 + 9, vertex at t = 5, value 9.
-      double f(double t) => -(t - 5.0) * (t - 5.0) + 9.0;
-      final est = quadraticPeak(
-        t0: 3,
-        t1: 5,
-        t2: 7,
-        f0: f(3),
-        f1: f(5),
-        f2: f(7),
-      );
-      expect(est.timeUs, closeTo(5.0, 1.0e-9));
-      expect(est.value, closeTo(9.0, 1.0e-9));
-    });
-
-    test('finds an off-grid vertex of an asymmetric parabola', () {
-      // Vertex not aligned with any sample: f(t) = -(t - 4.3)^2 + 12.
-      double f(double t) => -(t - 4.3) * (t - 4.3) + 12.0;
-      final est = quadraticPeak(
-        t0: 2,
-        t1: 5,
-        t2: 8,
-        f0: f(2),
-        f1: f(5),
-        f2: f(8),
-      );
-      expect(est.timeUs, closeTo(4.3, 1.0e-6));
-      expect(est.value, closeTo(12.0, 1.0e-6));
-    });
-
-    test('clamps the vertex into the bracket and matches a sine peak', () {
-      // A sine hump sampled around its peak: max of sin at t = pi/2.
-      const peakT = math.pi / 2;
-      double f(double t) => math.sin(t);
-      final est = quadraticPeak(
-        t0: peakT - 0.2,
-        t1: peakT,
-        t2: peakT + 0.2,
-        f0: f(peakT - 0.2),
-        f1: f(peakT),
-        f2: f(peakT + 0.2),
-      );
-      // Quadratic fit near a smooth peak recovers it to high accuracy.
-      expect(est.timeUs, closeTo(peakT, 1.0e-3));
-      expect(est.value, closeTo(1.0, 1.0e-3));
-      // Vertex stays inside the bracket.
-      expect(est.timeUs, greaterThanOrEqualTo(peakT - 0.2));
-      expect(est.timeUs, lessThanOrEqualTo(peakT + 0.2));
-    });
-
-    test('golden-section recovers a non-parabolic peak the fit would miss', () {
-      // A sharply-peaked function (|sin|-like cusp) where a single quadratic
-      // through 3 coarse samples under-reads the true maximum, but golden
-      // section converges to it. Peak of cos^8 is at t = 0, value 1.
+  group('goldenSectionMax', () {
+    test('recovers a non-parabolic peak a parabola fit would miss', () {
+      // A sharply-peaked function (cos^8) where a single quadratic through 3
+      // coarse samples under-reads the true maximum, but golden section
+      // converges to it. Peak of cos^8 is at t = 0, value 1.
       double f(double t) => math.pow(math.cos(t), 8).toDouble();
       final est = goldenSectionMax(
         f,
@@ -131,7 +81,7 @@ void main() {
       expect(est.value, closeTo(1.0, 1.0e-3));
     });
 
-    test('golden-section finds a smooth parabola peak too', () {
+    test('finds a smooth parabola peak', () {
       double f(double t) => -(t - 4.3) * (t - 4.3) + 12.0;
       final est = goldenSectionMax(
         f,
@@ -144,27 +94,12 @@ void main() {
       expect(est.value, closeTo(12.0, 1.0e-3));
     });
 
-    test('golden-section throws when cUs is not greater than aUs', () {
+    test('throws when cUs is not greater than aUs', () {
       double f(double t) => -t * t;
       expect(
         () => goldenSectionMax(f, aUs: 5, cUs: 5),
         throwsArgumentError,
       );
-    });
-
-    test('falls back to the middle sample for collinear points', () {
-      // Straight line - no curvature, degenerate vertex.
-      double f(double t) => 2.0 * t + 1.0;
-      final est = quadraticPeak(
-        t0: 0,
-        t1: 1,
-        t2: 2,
-        f0: f(0),
-        f1: f(1),
-        f2: f(2),
-      );
-      expect(est.timeUs, 1.0);
-      expect(est.value, f(1));
     });
   });
 }

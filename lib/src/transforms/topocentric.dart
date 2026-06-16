@@ -22,8 +22,8 @@ import 'package:satellite_observer/src/transforms/range_rate.dart';
 /// is zero (e.g. the satellite coincides with the observer), which would make
 /// the azimuth/elevation undefined.
 ///
-/// This is library-private for now; the public facade `lookAngleAt` is wired
-/// in a later phase.
+/// Library-private; surfaced through the public facade as
+/// `SatelliteObserver.lookAngleAt`.
 LookAngle topocentricLookAngle(EciState state, Observer observer) {
   final satEcef = temeToEcef(state);
   final observerEcef = observerToEcef(observer);
@@ -49,8 +49,8 @@ LookAngle topocentricLookAngle(EciState state, Observer observer) {
 /// returned [SubSatellitePoint] carries geodetic latitude/longitude in degrees
 /// and altitude above the ellipsoid in kilometres.
 ///
-/// Library-private for now; surfaced through the public facade in a later
-/// phase.
+/// Library-private; surfaced through the public facade as
+/// `SatelliteObserver.subPointAt`.
 SubSatellitePoint subSatellitePoint(EciState state) {
   final satEcef = temeToEcef(state);
   return ecefToGeodetic(satEcef.position);
