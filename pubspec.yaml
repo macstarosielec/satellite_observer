@@ -2,7 +2,7 @@ name: satellite_observer
 description: >-
   A pure-Dart engine for SGP4 satellite propagation, topocentric look-angles,
   pass prediction, and naked-eye visibility. No Flutter dependency.
-version: 0.1.0
+version: 1.0.0
 repository: https://github.com/macstarosielec/satellite_observer
 issue_tracker: https://github.com/macstarosielec/satellite_observer/issues
 homepage: https://github.com/macstarosielec/satellite_observer

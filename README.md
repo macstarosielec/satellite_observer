@@ -102,7 +102,7 @@ so a filtered sub-10-degree pass never surprises you.
 
 ```yaml
 dependencies:
-  satellite_observer: ^0.1.0
+  satellite_observer: ^1.0.0
 ```
 
 ```dart

@@ -4,7 +4,10 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2026-06-16
+## [1.0.0] - 2026-06-16
+
+First stable release: the complete L1-L4 compute set with a frozen public API
+(semver-stable from here).
 
 ### Added
 
@@ -39,7 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   caveat and the 10-degree default rationale; runnable offline examples
   (`visible_iss_pass`, `look_angle`, `passes`) plus a network `celestrak`
   fetch -> propagate example; a propagation benchmark.
-- Initial package scaffold retained: strict analysis options
-  (very_good_analysis + strict language modes), MIT license with Vallado
-  attribution, and CI (format / analyze / test with coverage / publish
-  dry-run).
+- **Tooling.** Strict analysis options (very_good_analysis + strict language
+  modes), MIT license with Vallado attribution, and CI (format / analyze /
+  test with coverage / publish dry-run).
+
+[1.0.0]: https://github.com/macstarosielec/satellite_observer/releases/tag/v1.0.0
