@@ -12,36 +12,10 @@ import 'dart:math' as math;
 
 import 'package:satellite_observer/satellite_observer.dart';
 import 'package:satellite_observer/src/domain/geo/angles.dart';
-import 'package:satellite_observer/src/domain/time/gmst.dart';
 import 'package:satellite_observer/src/transforms/ecef_to_topocentric.dart';
-import 'package:satellite_observer/src/transforms/eci_to_ecef.dart';
 import 'package:satellite_observer/src/transforms/geodetic.dart';
 import 'package:satellite_observer/src/transforms/topocentric.dart';
 import 'package:test/test.dart';
-
-/// Rotates a desired ECEF vector back into TEME so that `temeToEcef` at [utc]
-/// reproduces [ecef] exactly.
-///
-/// The TEME -> ECEF rotation is `R3(theta)` about Z by GMST `theta`:
-///
-/// ```text
-/// x_ecef =  cos(theta)*x_teme + sin(theta)*y_teme
-/// y_ecef = -sin(theta)*x_teme + cos(theta)*y_teme
-/// z_ecef =  z_teme
-/// ```
-///
-/// so the inverse `R3(-theta)` applied to the ECEF target yields the TEME
-/// position to feed into an [EciState].
-Vector3 ecefToTemeAt(Vector3 ecef, DateTime utc) {
-  final theta = greenwichMeanSiderealTime(utc);
-  final c = math.cos(theta);
-  final s = math.sin(theta);
-  return Vector3(
-    c * ecef.x - s * ecef.y,
-    s * ecef.x + c * ecef.y,
-    ecef.z,
-  );
-}
 
 /// Builds an ECEF relative vector from SEZ `(south, east, zenith)` components
 /// at the observer geodetic [latDeg]/[lonDeg], i.e. the transpose of the SEZ
@@ -68,38 +42,24 @@ Vector3 sezToEcefRelative(
 
 void main() {
   group('topocentricLookAngle - degenerate geometry', () {
-    test('zero slant range throws GeometryException (no NaN result)', () {
+    test('a non-finite state position throws GeometryException (no NaN result)',
+        () {
       final observer = Observer(
         latitudeDeg: 52.2297,
         longitudeDeg: 21.0122,
         altitudeMeters: 100,
       );
 
-      // A TEME state whose ECEF position equals the observer's ECEF position:
-      // the satellite coincides with the observer, so slant range is zero.
-      //
-      // The TEME position is the observer ECEF rotated back by -GMST, so the
-      // forward TEME -> ECEF rotation reproduces the observer ECEF. At the
-      // J2000 instant below this round-trip is bit-exact for this observer, so
-      // the resulting slant range is exactly zero (not merely tiny) and the
-      // `range == 0` guard fires.
-      final utc = DateTime.utc(2000, 1, 1, 12);
-      final observerEcef = observerToEcef(observer);
-      final teme = ecefToTemeAt(observerEcef, utc);
+      // A non-finite TEME position propagates to a non-finite slant range; the
+      // guard must surface a GeometryException rather than return a NaN/Inf
+      // LookAngle. A NaN component is used (not a contrived coincident
+      // position) so the trigger is exact and platform-independent: a
+      // bit-exact zero range would depend on non-portable trig rounding.
       final state = EciState(
-        position: teme,
+        position: const Vector3(double.nan, 0, 0),
         velocity: const Vector3(0, 0, 0),
-        utc: utc,
+        utc: DateTime.utc(2000, 1, 1, 12),
       );
-
-      // Precondition: the state's ECEF reproduces the observer ECEF bit-exactly
-      // at this instant, so the slant range is exactly zero. If a platform's
-      // floating-point breaks this coincidence the precondition fails loudly
-      // (rather than the throw assertion silently testing a near-zero range).
-      final satEcef = temeToEcef(state).position;
-      expect(satEcef.x, observerEcef.x);
-      expect(satEcef.y, observerEcef.y);
-      expect(satEcef.z, observerEcef.z);
 
       expect(
         () => topocentricLookAngle(state, observer),
@@ -107,7 +67,7 @@ void main() {
       );
     });
 
-    test('ecefToTopocentric throws on a coincident position', () {
+    test('ecefToTopocentric throws on a coincident position (zero range)', () {
       final observer = Observer(latitudeDeg: 10, longitudeDeg: 20);
       final observerEcef = observerToEcef(observer);
       expect(
