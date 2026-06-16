@@ -1,13 +1,11 @@
 // Internal L3 helpers: refine a bracketed elevation-threshold crossing to a
 // sub-second time (bisection), and refine a bracketed elevation maximum to its
-// peak time (quadratic interpolation). Pure functions, library-private.
+// peak time (golden-section search). Pure functions, library-private.
 //
 // Times are represented as microseconds-since-epoch doubles so the refiners
 // operate on a plain real axis; the pass-finder converts back to DateTime.
 // Working in microseconds keeps sub-second time resolution well within double
 // precision for any realistic search window.
-
-import 'dart:math' as math;
 
 /// Refines the zero crossing of [f] inside the bracket `[loUs, hiUs]` (time in
 /// microseconds) by bisection, returning the crossing time in microseconds.
@@ -75,55 +73,14 @@ class PeakEstimate {
   final double value;
 }
 
-/// Estimates the location and value of a maximum from three sample points by
-/// fitting a parabola through them (quadratic interpolation).
-///
-/// The three times [t0] < [t1] < [t2] and their values [f0], [f1], [f2] must
-/// bracket an interior maximum (typically `f1 >= f0` and `f1 >= f2`). Returns
-/// the vertex of the fitted parabola, clamped to `[t0, t2]`.
-///
-/// Falls back to the middle sample when the points are collinear (a degenerate
-/// parabola with no well-defined vertex).
-PeakEstimate quadraticPeak({
-  required double t0,
-  required double t1,
-  required double t2,
-  required double f0,
-  required double f1,
-  required double f2,
-}) {
-  // Vertex of the parabola through (t0,f0),(t1,f1),(t2,f2). Using the standard
-  // three-point formula:
-  //   t* = t1 - 0.5 * ((t1-t0)^2 (f1-f2) - (t1-t2)^2 (f1-f0))
-  //                  / ((t1-t0)   (f1-f2) - (t1-t2)   (f1-f0))
-  final d1 = t1 - t0;
-  final d2 = t1 - t2;
-  final a = d1 * d1 * (f1 - f2) - d2 * d2 * (f1 - f0);
-  final b = d1 * (f1 - f2) - d2 * (f1 - f0);
-
-  if (b == 0.0 || !a.isFinite || !b.isFinite) {
-    // Degenerate (collinear) - the middle sample is the best estimate.
-    return PeakEstimate(t1, f1);
-  }
-
-  var tStar = t1 - 0.5 * a / b;
-  // Guard against extrapolation outside the bracket.
-  tStar = math.max(t0, math.min(t2, tStar));
-
-  // Evaluate the fitted parabola at tStar to estimate the peak value. Build the
-  // quadratic in Lagrange form and evaluate it at tStar.
-  final value = _lagrange3(tStar, t0, t1, t2, f0, f1, f2);
-  return PeakEstimate(tStar, value);
-}
-
 /// Maximizes a unimodal function [f] on `[aUs, cUs]` by golden-section search,
 /// returning the peak time/value.
 ///
 /// The bracket must contain a single interior maximum (the coarse sampler
-/// guarantees this around its peak grid sample). Unlike [quadraticPeak] - which
-/// is exact only for a true parabola - this evaluates [f] directly, so it
-/// converges to the real maximum of a curved arc (e.g. a high overhead pass
-/// where elevation-vs-time is sharply non-parabolic). Iterates until the
+/// guarantees this around its peak grid sample). It evaluates [f] directly, so
+/// it converges to the real maximum of a curved arc (e.g. a high overhead pass
+/// where elevation-vs-time is sharply non-parabolic, which a parabola fit would
+/// miss). Iterates until the
 /// bracket is narrower than [toleranceUs] (default 5e4 us = 0.05 s) or
 /// [maxIterations] is reached.
 ///
@@ -175,20 +132,4 @@ PeakEstimate goldenSectionMax(
   // Best estimate: the midpoint of the final narrow bracket, evaluated.
   final tStar = a + (c - a) / 2.0;
   return PeakEstimate(tStar, f(tStar));
-}
-
-// Evaluates the quadratic Lagrange interpolant through three points at [t].
-double _lagrange3(
-  double t,
-  double t0,
-  double t1,
-  double t2,
-  double f0,
-  double f1,
-  double f2,
-) {
-  final l0 = ((t - t1) * (t - t2)) / ((t0 - t1) * (t0 - t2));
-  final l1 = ((t - t0) * (t - t2)) / ((t1 - t0) * (t1 - t2));
-  final l2 = ((t - t0) * (t - t1)) / ((t2 - t0) * (t2 - t1));
-  return f0 * l0 + f1 * l1 + f2 * l2;
 }

@@ -68,9 +68,9 @@ enum HorizonMask {
 final class SatelliteObserver {
   /// Creates a [SatelliteObserver] for [elements] seen from [observer].
   ///
-  /// If [engine] is omitted, an [Sgp4Engine] is created from [elements]. When
-  /// [engine] is supplied, it drives propagation and [elements] is used only to
-  /// build the default engine; the engine owns the epoch ([epoch] delegates to
+  /// If [engine] is omitted, an [Sgp4Engine] is built from [elements]. When
+  /// [engine] is supplied, [elements] is ignored and the supplied engine drives
+  /// all propagation; the engine owns the epoch ([epoch] delegates to
   /// `engine.epoch`).
   SatelliteObserver({
     required GpElements elements,
