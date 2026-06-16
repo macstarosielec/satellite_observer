@@ -1,0 +1,103 @@
+{
+  "tle": {
+    "line1": "1 25544U 98067A   24122.51736111  .00016717  00000-0  30074-3 0  9991",
+    "line2": "2 25544  51.6406 211.0067 0004572  86.8242 273.3318 15.50186571 12345",
+    "name": "ISS (ZARYA)"
+  },
+  "observer": {
+    "latDeg": 52.2297,
+    "lonDeg": 21.0122,
+    "altM": 100.0
+  },
+  "minElevationDeg": 10.0,
+  "window": {
+    "fromUtc": "2024-05-01T12:25:00Z",
+    "toUtc": "2024-05-04T12:25:00Z"
+  },
+  "passes": [
+    {
+      "riseUtc": "2024-05-02T01:01:59Z",
+      "culminationUtc": "2024-05-02T01:04:43Z",
+      "setUtc": "2024-05-02T01:07:27Z",
+      "peakElevationDeg": 23.384141376050522
+    },
+    {
+      "riseUtc": "2024-05-02T02:37:47Z",
+      "culminationUtc": "2024-05-02T02:41:05Z",
+      "setUtc": "2024-05-02T02:44:25Z",
+      "peakElevationDeg": 66.35788448345964
+    },
+    {
+      "riseUtc": "2024-05-02T04:14:26Z",
+      "culminationUtc": "2024-05-02T04:17:47Z",
+      "setUtc": "2024-05-02T04:21:07Z",
+      "peakElevationDeg": 78.42155836142844
+    },
+    {
+      "riseUtc": "2024-05-02T05:51:14Z",
+      "culminationUtc": "2024-05-02T05:54:18Z",
+      "setUtc": "2024-05-02T05:57:22Z",
+      "peakElevationDeg": 34.461666773664476
+    },
+    {
+      "riseUtc": "2024-05-03T00:14:06Z",
+      "culminationUtc": "2024-05-03T00:16:19Z",
+      "setUtc": "2024-05-03T00:18:32Z",
+      "peakElevationDeg": 16.68584544609922
+    },
+    {
+      "riseUtc": "2024-05-03T01:49:17Z",
+      "culminationUtc": "2024-05-03T01:52:33Z",
+      "setUtc": "2024-05-03T01:55:49Z",
+      "peakElevationDeg": 53.583307920381515
+    },
+    {
+      "riseUtc": "2024-05-03T03:25:51Z",
+      "culminationUtc": "2024-05-03T03:29:12Z",
+      "setUtc": "2024-05-03T03:32:32Z",
+      "peakElevationDeg": 82.75698248940202
+    },
+    {
+      "riseUtc": "2024-05-03T05:02:35Z",
+      "culminationUtc": "2024-05-03T05:05:48Z",
+      "setUtc": "2024-05-03T05:09:01Z",
+      "peakElevationDeg": 45.93014683288261
+    },
+    {
+      "riseUtc": "2024-05-03T06:40:14Z",
+      "culminationUtc": "2024-05-03T06:41:56Z",
+      "setUtc": "2024-05-03T06:43:39Z",
+      "peakElevationDeg": 13.387245528393905
+    },
+    {
+      "riseUtc": "2024-05-03T23:26:47Z",
+      "culminationUtc": "2024-05-03T23:27:56Z",
+      "setUtc": "2024-05-03T23:29:05Z",
+      "peakElevationDeg": 11.379201758919626
+    },
+    {
+      "riseUtc": "2024-05-04T01:00:50Z",
+      "culminationUtc": "2024-05-04T01:04:00Z",
+      "setUtc": "2024-05-04T01:07:10Z",
+      "peakElevationDeg": 41.015205329675915
+    },
+    {
+      "riseUtc": "2024-05-04T02:37:14Z",
+      "culminationUtc": "2024-05-04T02:40:35Z",
+      "setUtc": "2024-05-04T02:43:55Z",
+      "peakElevationDeg": 81.63996326709534
+    },
+    {
+      "riseUtc": "2024-05-04T04:13:57Z",
+      "culminationUtc": "2024-05-04T04:17:15Z",
+      "setUtc": "2024-05-04T04:20:32Z",
+      "peakElevationDeg": 58.88633493168261
+    },
+    {
+      "riseUtc": "2024-05-04T05:51:04Z",
+      "culminationUtc": "2024-05-04T05:53:32Z",
+      "setUtc": "2024-05-04T05:55:59Z",
+      "peakElevationDeg": 19.19471194646747
+    }
+  ]
+}
