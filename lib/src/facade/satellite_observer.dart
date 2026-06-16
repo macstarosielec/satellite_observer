@@ -4,10 +4,14 @@ import 'package:satellite_observer/src/domain/gp_elements.dart';
 import 'package:satellite_observer/src/domain/look_angle.dart';
 import 'package:satellite_observer/src/domain/pass.dart';
 import 'package:satellite_observer/src/domain/sub_point.dart';
+import 'package:satellite_observer/src/domain/twilight_phase.dart';
+import 'package:satellite_observer/src/domain/visibility.dart';
 import 'package:satellite_observer/src/passes/pass_finder.dart';
 import 'package:satellite_observer/src/propagation/propagation_engine.dart';
 import 'package:satellite_observer/src/propagation/sgp4/sgp4_engine.dart';
 import 'package:satellite_observer/src/transforms/topocentric.dart' as topo;
+import 'package:satellite_observer/src/visibility/visibility_calculator.dart'
+    as vis;
 
 /// Named minimum-elevation presets for [SatelliteObserver.passes] (ADR-8).
 ///
@@ -50,11 +54,17 @@ enum HorizonMask {
 /// are intentionally excluded; this default is documented here so a caller is
 /// never surprised by "missing" low passes.
 ///
-/// ## Surface scope (phasing)
+/// ## Visibility (L4)
 ///
-/// The L4 visibility methods (`visiblePasses`, `isObserverInDarkness`,
-/// `isSatelliteSunlit`, `nextVisiblePass`) are added in a later phase (P4), so
-/// the current surface is geometry-only and not yet the complete API.
+/// A pass is *visible* only where the observer is in darkness (the Sun is below
+/// a twilight threshold) AND the satellite is sunlit (not in Earth's shadow).
+/// [visiblePasses] combines both into [PassVisibility] verdicts;
+/// [isObserverInDarkness] and [isSatelliteSunlit] expose the two halves. The
+/// darkness threshold defaults to [TwilightPhase.civil] (`-6` deg, ADR-7); pass
+/// a raw `sunAltitudeBelowDeg` to override it. The Sun model is analytic Meeus
+/// (~arc-minute, no ephemeris/network, ADR-2) and the eclipse test is a
+/// geometric conical umbra ignoring atmospheric refraction (ADR-6) - spotter
+/// grade, not survey grade (NFR-2).
 final class SatelliteObserver {
   /// Creates a [SatelliteObserver] for [elements] seen from [observer].
   ///
@@ -188,6 +198,120 @@ final class SatelliteObserver {
     );
     return found.isEmpty ? null : found.first;
   }
+
+  // L4 - the headline (FR-12/13/14).
+
+  /// Finds passes in `[from, to]` and marks the naked-eye-visible sub-intervals
+  /// of each (FR-14) - the headline capability.
+  ///
+  /// First runs [passes] (same geometry, same [minElevationDeg] default of `10`
+  /// deg, ADR-8), then for each pass computes where the observer is in darkness
+  /// AND the satellite is sunlit, yielding a [PassVisibility] per pass (a pass
+  /// with no visible sub-interval has `isVisible == false` and an empty
+  /// interval list, but is still returned so callers see the full pass set).
+  ///
+  /// The darkness threshold is [twilight] (default [TwilightPhase.civil], `-6`
+  /// deg). If [sunAltitudeBelowDeg] is supplied it overrides [twilight] with a
+  /// raw Sun-altitude threshold in degrees (ADR-7).
+  ///
+  /// Each pass is sampled at 2 s intervals to detect dark-and-sunlit
+  /// transitions; each detected edge is then bisected to ~100 ms.
+  ///
+  /// Throws an [ArgumentError] if [from] is not before [to], or if
+  /// [minElevationDeg] is outside `[0, 90)` (delegated to [passes]).
+  List<PassVisibility> visiblePasses({
+    required DateTime from,
+    required DateTime to,
+    double minElevationDeg = 10,
+    TwilightPhase twilight = TwilightPhase.civil,
+    double? sunAltitudeBelowDeg,
+  }) {
+    final threshold = _darknessThreshold(twilight, sunAltitudeBelowDeg);
+    final found = passes(
+      from: from,
+      to: to,
+      minElevationDeg: minElevationDeg,
+    );
+    return found
+        .map(
+          (pass) => vis.computePassVisibility(
+            pass,
+            observer: _observer,
+            engine: _engine,
+            sunAltitudeBelowDeg: threshold,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  /// Whether the observer is in darkness at [utc] (FR-12).
+  ///
+  /// The observer is in darkness when the Sun's geometric topocentric altitude
+  /// (Meeus model, ADR-2; no atmospheric refraction) is below the threshold:
+  /// [twilight]`.sunAltitudeDegrees` (default [TwilightPhase.civil], `-6` deg),
+  /// or the raw [sunAltitudeBelowDeg] in degrees if supplied (which overrides
+  /// [twilight], ADR-7).
+  bool isObserverInDarkness(
+    DateTime utc, {
+    TwilightPhase twilight = TwilightPhase.civil,
+    double? sunAltitudeBelowDeg,
+  }) {
+    final threshold = _darknessThreshold(twilight, sunAltitudeBelowDeg);
+    return vis.isObserverInDarknessAt(
+      utc.toUtc(),
+      _observer,
+      sunAltitudeBelowDeg: threshold,
+    );
+  }
+
+  /// Whether the satellite is sunlit (not in Earth's shadow) at [utc] (FR-13).
+  ///
+  /// Propagates to [utc] and runs the geometric conical-umbra test against the
+  /// Meeus Sun direction (ADR-6). `false` means the satellite is in Earth's
+  /// umbra (eclipsed) and so cannot reflect sunlight to the ground.
+  bool isSatelliteSunlit(DateTime utc) =>
+      vis.isSatelliteSunlitAt(utc.toUtc(), _engine);
+
+  /// The first naked-eye-visible pass at or after [after] within [within], or
+  /// `null` if none.
+  ///
+  /// Convenience sugar over [visiblePasses]: it searches `[after, after +
+  /// within]` and returns the earliest [PassVisibility] whose `isVisible` is
+  /// `true`. No new computation - same Sun/eclipse model and the same
+  /// [minElevationDeg] default (`10`, ADR-8) and [twilight] default
+  /// ([TwilightPhase.civil]).
+  ///
+  /// Throws an [ArgumentError] if [within] is not positive or [minElevationDeg]
+  /// is outside `[0, 90)`.
+  PassVisibility? nextVisiblePass({
+    required DateTime after,
+    Duration within = const Duration(hours: 48),
+    double minElevationDeg = 10,
+    TwilightPhase twilight = TwilightPhase.civil,
+  }) {
+    if (within <= Duration.zero) {
+      throw ArgumentError.value(within, 'within', 'must be positive');
+    }
+    _validateMinElevation(minElevationDeg);
+    final all = visiblePasses(
+      from: after,
+      to: after.toUtc().add(within),
+      minElevationDeg: minElevationDeg,
+      twilight: twilight,
+    );
+    for (final pv in all) {
+      if (pv.isVisible) return pv;
+    }
+    return null;
+  }
+
+  /// Resolves the darkness threshold (deg): the raw override when supplied,
+  /// otherwise the [twilight] phase's `sunAltitudeDegrees`.
+  double _darknessThreshold(
+    TwilightPhase twilight,
+    double? sunAltitudeBelowDeg,
+  ) =>
+      sunAltitudeBelowDeg ?? twilight.sunAltitudeDegrees;
 
   void _validateWindow({required DateTime from, required DateTime to}) {
     if (!from.toUtc().isBefore(to.toUtc())) {
