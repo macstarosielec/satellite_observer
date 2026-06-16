@@ -16,3 +16,8 @@ pubspec.lock
 
 # npm artefacts (not relevant to a Dart package)
 package-lock.json
+
+# Fixture-generation tooling artefacts (reference only, NEVER bundled - the
+# package stays analytic / ephemeris-free per ADR-2 / NFR-5).
+.venv/
+*.bsp

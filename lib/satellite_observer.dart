@@ -1,9 +1,11 @@
 /// Pure-Dart engine for SGP4 satellite propagation, topocentric look-angles,
 /// pass prediction, and naked-eye visibility.
 ///
-/// This is the public barrel - the only entry point consumers import. The L1
-/// propagation layer (orbital elements, the SGP4/SDP4 engine, and the TEME
-/// state it produces) is exported here.
+/// This is the public barrel - the only entry point consumers import. It
+/// exports the full L1-L4 surface: the L1 propagation layer (orbital elements,
+/// the SGP4/SDP4 engine, and the TEME state it produces), L2 topocentric
+/// look-angles and sub-points, L3 pass prediction, and L4 naked-eye visibility
+/// (twilight darkness, eclipse, and visible-pass determination).
 library;
 
 export 'src/domain/eci_state.dart' show EciState;
@@ -19,6 +21,8 @@ export 'src/domain/gp_elements.dart' show GpElements;
 export 'src/domain/look_angle.dart' show LookAngle;
 export 'src/domain/pass.dart' show Pass, PassEvent, PassEventKind;
 export 'src/domain/sub_point.dart' show SubSatellitePoint;
+export 'src/domain/twilight_phase.dart' show TwilightPhase;
+export 'src/domain/visibility.dart' show PassVisibility, VisibleInterval;
 export 'src/facade/satellite_observer.dart' show HorizonMask, SatelliteObserver;
 export 'src/propagation/propagation_engine.dart' show PropagationEngine;
 export 'src/propagation/sgp4/gravity_constants.dart' show GravityModel;
