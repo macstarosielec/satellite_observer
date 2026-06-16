@@ -1,0 +1,18 @@
+# Lints: Very Good Analysis + strict language modes.
+# Mirrors the sibling celestrak package's ruleset (dart-satellite-observer
+# implementation-plan ADR-9; pub.dev 130/130 target, NFR-8).
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  exclude:
+    - test/fixtures/**
+    - tool/**
+
+linter:
+  rules:
+    # Enforce dartdoc on every public member for the pub.dev score (NFR-8).
+    public_member_api_docs: true
