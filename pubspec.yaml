@@ -1,0 +1,43 @@
+name: satellite_observer
+description: >-
+  A pure-Dart engine for SGP4 satellite propagation, topocentric look-angles,
+  pass prediction, and naked-eye visibility. No Flutter dependency.
+version: 0.1.0
+repository: https://github.com/macstarosielec/satellite_observer
+issue_tracker: https://github.com/macstarosielec/satellite_observer/issues
+homepage: https://github.com/macstarosielec/satellite_observer
+
+# pub.dev allows at most 5 topics. Kept: the core (satellite, sgp4, tle) plus
+# the headline differentiators (pass-prediction, visibility). `orbital` (used
+# by the sibling celestrak) was dropped as the broadest/most redundant term;
+# satellite + tle still cross-link the two packages on pub.dev.
+topics:
+  - satellite
+  - sgp4
+  - tle
+  - pass-prediction
+  - visibility
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  windows:
+  web:
+
+environment:
+  sdk: ^3.4.0
+
+# Dependency versions are capped so their SDK floor stays <= environment.sdk
+# (^3.4.0); a newer dep that requires a higher SDK would silently raise the
+# package's supported range. The core has no runtime dependency on celestrak
+# (ADR-3): celestrak is a dev_dependency used only by example/.
+dependencies:
+  meta: ^1.16.0
+
+dev_dependencies:
+  celestrak: ^1.1.0
+  coverage: ^1.15.0
+  test: ^1.25.8
+  very_good_analysis: ^6.0.0

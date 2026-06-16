@@ -1,0 +1,18 @@
+# Dart / pub
+.dart_tool/
+.packages
+build/
+coverage/
+doc/api/
+
+# A library should not commit its lockfile.
+pubspec.lock
+
+# OS / editor
+.DS_Store
+.idea/
+*.iml
+.vscode/
+
+# npm artefacts (not relevant to a Dart package)
+package-lock.json
