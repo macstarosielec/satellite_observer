@@ -8,6 +8,7 @@ and a pass exists. Run any of them with `dart run example/<file>.dart`.
 |------|---------------|---------|
 | [`visible_iss_pass.dart`](visible_iss_pass.dart) | The headline: next naked-eye-visible ISS pass over a site | offline |
 | [`look_angle.dart`](look_angle.dart) | Propagate to an instant -> azimuth/elevation/range + sub-point | offline |
+| [`live_tracking.dart`](live_tracking.dart) | The live/ticking pattern: build one observer, call it across ticks | offline |
 | [`passes.dart`](passes.dart) | All ISS passes over a window at the default 10 deg horizon | offline |
 | [`fetch_with_celestrak.dart`](fetch_with_celestrak.dart) | The idiomatic fetch -> propagate handoff via `celestrak` | needs network |
 

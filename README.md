@@ -114,7 +114,9 @@ import 'package:satellite_observer/satellite_observer.dart';
 ## The toolkit
 
 `SatelliteObserver` is the single facade. Construct it from generic
-`GpElements` plus an `Observer`, then call:
+`GpElements` plus an `Observer` **once per satellite** and reuse it across ticks
+(construction runs `sgp4init`; do not rebuild it per frame - see
+[Performance](#performance)), then call:
 
 | Layer | Methods | What you get |
 |-------|---------|--------------|
@@ -185,17 +187,29 @@ not adopt it.
 
 ## Performance
 
-Measured on an Apple Silicon (M-series) Mac, Dart 3.12.0, 2026-06-16
+Measured on an Apple Silicon (M-series) Mac, Dart 3.12.0, 2026-06-21
 (`dart run benchmark/propagation_benchmark.dart`). Numbers are machine- and
 date-dependent; treat them as order-of-magnitude:
 
 | Operation | Budget (NFR-6) | Measured |
 |-----------|----------------|----------|
-| single `propagate` + `lookAngleAt` | < 1 ms (< one 60 fps frame) | **~0.0006 ms** |
-| 7-day single-satellite `passes()` search | < ~500 ms (interactive) | **~14 ms** |
+| single `propagate` + `lookAngleAt` | < 1 ms (< one 60 fps frame) | **~0.0005 ms** |
+| 7-day single-satellite `passes()` search | < ~500 ms (interactive) | **~12 ms** |
+| `SatelliteObserver` / `Sgp4Engine` construction (`sgp4init`) | one-time setup | **~0.0005 ms** |
 
 Both budgets are met with a wide margin, so no `Isolate.run` offload is needed;
 heavy batch work can still be moved to an isolate by the caller if desired.
+
+**Construct once, reuse across ticks.** Construction runs `sgp4init`, which
+costs about as much as a whole propagation. That is cheap once, but a live
+tracker that rebuilds a fresh `SatelliteObserver` (or `Sgp4Engine`) every frame
+pays it on every tick on top of the propagation, and a `passes()` /
+`visiblePasses()` search propagates many times internally, so reconstructing per
+call multiplies the waste. Build one observer per satellite up front and reuse
+it across ticks; see [`example/live_tracking.dart`](example/live_tracking.dart).
+The optional `engine:` argument lets a single initialised `Sgp4Engine` drive
+several observers (for example the same satellite seen from different sites)
+without re-running `sgp4init` per observer.
 
 ---
 
