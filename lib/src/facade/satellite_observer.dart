@@ -43,6 +43,21 @@ enum HorizonMask {
 /// optional `engine` argument (ADR-1). All angles are degrees and all times are
 /// UTC at this boundary (ADR-13).
 ///
+/// ## Reuse: construct once, call across ticks
+///
+/// Construction runs the SGP4 initialisation ([Sgp4Engine] executes `sgp4init`
+/// exactly once in its constructor), which costs roughly as much as a single
+/// propagation. Construct one [SatelliteObserver] per satellite up front and
+/// reuse it for every tick - do **not** rebuild a fresh observer (or
+/// [Sgp4Engine]) per frame in a live tracker, which would re-pay that setup on
+/// every tick on top of the propagation, and far more inside a [passes] /
+/// [visiblePasses] search (which propagates many times internally). When the
+/// same initialised propagator must serve multiple observers (for example one
+/// satellite seen from several sites), build the [Sgp4Engine] once and pass it
+/// via the `engine` argument to each [SatelliteObserver] - that single,
+/// cache-friendly propagator then drives them all without re-running
+/// `sgp4init`.
+///
 /// ## Minimum elevation default
 ///
 /// [passes] and [nextPass] default `minElevationDeg` to **`10` deg** (ADR-8),

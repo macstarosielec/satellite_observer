@@ -7,6 +7,13 @@
 ///   (b) a 7-day single-satellite `passes()` search should be well under
 ///       ~500 ms (interactive, no perceptible lag).
 ///
+/// It also reports (c) the one-time construction cost of a [SatelliteObserver]
+/// (the `Sgp4Engine` `sgp4init`) so the construct-vs-call asymmetry is visible.
+/// Construction costs roughly as much as a single propagation, so a live
+/// tracker that rebuilds an observer every tick doubles its per-tick work for
+/// no benefit (and far more inside a `passes()` search, which propagates many
+/// times): build once and reuse across ticks rather than reconstruct per frame.
+///
 /// This is NOT part of CI. Run it manually and record the numbers (with a
 /// machine/date caveat) in the README:
 ///
@@ -77,4 +84,48 @@ void main() {
   print('    ${perSearchMs.toStringAsFixed(2)} ms/search');
   print('    budget: < ~500 ms  -> '
       '${perSearchMs < 500.0 ? 'PASS' : 'EXCEEDED (consider Isolate.run)'}');
+  print('');
+
+  // --- (c) one-time construction cost (sgp4init) --------------------------
+  // Parse the elements once so we measure the propagator initialisation, not
+  // TLE parsing: this is the per-satellite setup that a reuse-minded caller
+  // pays once and a per-frame caller pays every tick.
+  final elements =
+      GpElements.fromTle(_issLine1, _issLine2, name: 'ISS (ZARYA)');
+  final observer = Observer(
+    latitudeDeg: 52.2297,
+    longitudeDeg: 21.0122,
+    altitudeMeters: 100,
+  );
+
+  // Warm-up (JIT). Propagate each fresh instance once so the constructor's
+  // sgp4init cannot be dead-code-eliminated.
+  final at = DateTime.utc(2024, 5, 2, 2, 41, 5);
+  var sink = 0.0;
+  for (var i = 0; i < 5000; i++) {
+    sink += SatelliteObserver(elements: elements, observer: observer)
+        .lookAngleAt(at)
+        .elevationDeg;
+  }
+
+  const constructRuns = 50000;
+  final swConstruct = Stopwatch()..start();
+  for (var i = 0; i < constructRuns; i++) {
+    sink += SatelliteObserver(elements: elements, observer: observer)
+        .lookAngleAt(at)
+        .elevationDeg;
+  }
+  swConstruct.stop();
+  if (sink.isNaN) print(''); // Keep `sink` live.
+  // Each iteration is one construction plus one lookAngleAt; subtract the
+  // measured single-call cost (a) to isolate the construction (sgp4init).
+  final perIterUs = swConstruct.elapsedMicroseconds / constructRuns;
+  final perConstructUs = perIterUs - perCallUs;
+  print('(c) SatelliteObserver construction (sgp4init) over '
+      '$constructRuns iterations:');
+  print('    ${perConstructUs.toStringAsFixed(3)} us/construction '
+      '(${(perConstructUs / 1000).toStringAsFixed(5)} ms/construction)');
+  print('    vs (a): construction is roughly '
+      '${(perConstructUs / perCallUs).toStringAsFixed(0)}x a single '
+      'propagate + lookAngleAt; build once and reuse across ticks.');
 }

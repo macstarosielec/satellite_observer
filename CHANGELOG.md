@@ -4,6 +4,20 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-06-21
+
+Documentation only. No public API or behaviour change.
+
+### Changed
+
+- Clarified that a `SatelliteObserver` (and its `Sgp4Engine`) should be
+  constructed once per satellite and reused across ticks, not rebuilt per
+  frame. Added a construction-cost row to the Performance table, a "Construct
+  once, reuse across ticks" section to the README and the `SatelliteObserver`
+  dartdoc, an `example/live_tracking.dart` build-once-then-loop sample, and a
+  note that the `engine:` parameter lets one initialised propagator serve
+  multiple observers.
+
 ## [1.0.0] - 2026-06-16
 
 First stable release: the complete L1-L4 compute set with a frozen public API
